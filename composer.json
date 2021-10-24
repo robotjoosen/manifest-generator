@@ -1,0 +1,19 @@
+{
+    "name": "robotjoosen/manifest-generator",
+    "description": "Generate Kubernetes manifest for Symfony project",
+    "type": "tool",
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "Roald Joosen",
+            "email": "robotjoosen@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {},
+    "bin": ["bin/generate-manifest.sh"],
+    "scripts": {
+        "post-install-cmd": ["bin/add-env-vars.sh"],
+        "post-update-cmd": ["bin/add-env-vars.sh"]
+    }
+}

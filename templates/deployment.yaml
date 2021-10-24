@@ -1,0 +1,98 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ${APP_NAME}-settings
+  namespace: ${NAMESPACE}
+data:
+  nginx.conf: |
+    events {
+    }
+    http {
+      server {
+        listen 80 default_server;
+        listen [::]:80 default_server;
+
+        root /var/www/html;
+        server_name _;
+        index index.php;
+
+        if (!-e $request_filename) {
+            rewrite ^.*$ /index.php last;
+        }
+
+        location ~ \.php$ {
+          include fastcgi_params;
+          fastcgi_param REQUEST_METHOD $request_method;
+          fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+          fastcgi_pass 127.0.0.1:9000;
+        }
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${APP_NAME}
+  namespace: ${NAMESPACE}
+  labels:
+    app: ${APP_NAME}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ${APP_NAME}
+  template:
+    metadata:
+      labels:
+        app: ${APP_NAME}
+    spec:
+      imagePullSecrets:
+        - name: dockerconfigjson-github-com
+      containers:
+        - image: ghcr.io/robotjoosen/${APP_NAME}:${VERSION_TAG}
+          name: app
+          volumeMounts:
+            - name: shared-files
+              mountPath: /var/shared/
+        - image: nginx:alpine
+          name: nginx
+          volumeMounts:
+            - name: shared-files
+              mountPath: /var/shared/
+            - name: nginx-config-volume
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+      volumes:
+        - name: shared-files
+          emptyDir: {}
+        - name: nginx-config-volume
+          configMap:
+            name: ${APP_NAME}-settings
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${APP_NAME}-service
+  namespace: ${NAMESPACE}
+  labels:
+    app: ${APP_NAME}
+spec:
+  selector:
+    app: ${APP_NAME}
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+---
+apiVersion: getambassador.io/v2
+kind: Mapping
+metadata:
+  name: ${APP_NAME}-mapping
+  namespace: ${NAMESPACE}
+  labels:
+    app: ${APP_NAME}
+spec:
+  host: ${HOST}
+  prefix: /
+  service: ${APP_NAME}-service:80
