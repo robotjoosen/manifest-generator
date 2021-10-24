@@ -7,10 +7,15 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
   [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
 done
 BASEDIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
-TEMPLATE_FILE="$BASEDIR/../templates/deployment.yaml"
+
+if [[ -d "deployment/templates" ]]
+then
+  TEMPLATE_DIR="deployment/templates"
+else
+  TEMPLATE_DIR="$BASEDIR/../templates"
+fi
 
 MANIFEST_DIR="deployment/manifests"
-MANIFEST_FILE="$MANIFEST_DIR/deployment.yaml"
 
 ENV_FILE=.env
 export VERSION_TAG="$1"
@@ -20,4 +25,8 @@ if ! test -f "$MANIFEST_DIR"; then
     mkdir -p $MANIFEST_DIR
 fi
 
-envsubst \$HOST,\$APP_NAME,\$NAMESPACE,\$VERSION_TAG < "$TEMPLATE_FILE" > "$MANIFEST_FILE"
+for FILE in `ls $TEMPLATE_DIR/*`
+do
+  NEW_MANIFEST_FILE="${FILE/$TEMPLATE_DIR/$MANIFEST_DIR}"
+  envsubst \$HOST,\$APP_NAME,\$NAMESPACE,\$VERSION_TAG < "$FILE" > "$NEW_MANIFEST_FILE"
+done

@@ -1,0 +1,11 @@
+apiVersion: getambassador.io/v2
+kind: Mapping
+metadata:
+  name: ${APP_NAME}-mapping
+  namespace: ${NAMESPACE}
+  labels:
+    app: ${APP_NAME}
+spec:
+  host: ${HOST}
+  prefix: /
+  service: ${APP_NAME}-service:80
