@@ -21,12 +21,11 @@ ENV_FILE=.env
 export VERSION_TAG="$1"
 export $(grep -v '^#' "$ENV_FILE" | xargs)
 
-if ! test -f "$MANIFEST_DIR"; then
-    mkdir -p $MANIFEST_DIR
-fi
-
-for FILE in `ls $TEMPLATE_DIR/*`
+for FILE in `find $TEMPLATE_DIR/* -type f`
 do
-  NEW_MANIFEST_FILE="${FILE/$TEMPLATE_DIR/$MANIFEST_DIR}"
+  NEW_PATH=$FILE | sed  "s/${TEMPLATE_DIR//\//\\/}//"
+  NEW_MANIFEST_FILE="${FILE/$TEMPLATE_DIR/$MANIFEST_DIR$NEW_PATH}"
+
+  mkdir -p `dirname $NEW_MANIFEST_FILE` && \
   envsubst \$HOST,\$APP_NAME,\$NAMESPACE,\$VERSION_TAG < "$FILE" > "$NEW_MANIFEST_FILE"
 done
